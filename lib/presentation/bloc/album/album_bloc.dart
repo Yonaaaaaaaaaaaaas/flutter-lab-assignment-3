@@ -11,11 +11,13 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
 
   AlbumBloc({required this.albumRepository}) : super(AlbumInitial()) {
     on<FetchAlbums>(_onFetchAlbums);
-    on<FetchAlbumDetails>(_onFetchAlbumDetails);
+    on<FetchAlbumPhotos>(_onFetchAlbumPhotos);
   }
 
   Future<void> _onFetchAlbums(
-      FetchAlbums event, Emitter<AlbumState> emit) async {
+    FetchAlbums event,
+    Emitter<AlbumState> emit,
+  ) async {
     emit(AlbumLoading());
     try {
       final albums = await albumRepository.getAlbums();
@@ -25,12 +27,14 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
     }
   }
 
-  Future<void> _onFetchAlbumDetails(
-      FetchAlbumDetails event, Emitter<AlbumState> emit) async {
+  Future<void> _onFetchAlbumPhotos(
+    FetchAlbumPhotos event,
+    Emitter<AlbumState> emit,
+  ) async {
     emit(AlbumLoading());
     try {
-      final album = await albumRepository.getAlbumDetails(event.albumId);
-      emit(AlbumDetailsLoaded(album));
+      final photos = await albumRepository.getAlbumPhotos(event.albumId);
+      emit(AlbumPhotosLoaded(photos));
     } catch (e) {
       emit(AlbumError(e.toString()));
     }

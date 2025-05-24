@@ -21,13 +21,13 @@ class AlbumsLoaded extends AlbumState {
   List<Object> get props => [albums];
 }
 
-class AlbumDetailsLoaded extends AlbumState {
-  final Album album;
+class AlbumPhotosLoaded extends AlbumState {
+  final List<Album> photos;
 
-  const AlbumDetailsLoaded(this.album);
+  const AlbumPhotosLoaded(this.photos);
 
   @override
-  List<Object> get props => [album];
+  List<Object> get props => [photos];
 }
 
 class AlbumError extends AlbumState {

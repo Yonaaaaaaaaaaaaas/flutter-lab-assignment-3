@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/album/album_bloc.dart';
 import '../bloc/album/album_event.dart';
+import 'package:go_router/go_router.dart';
 import '../bloc/album/album_state.dart';
 
 class AlbumDetailScreen extends StatelessWidget {
@@ -13,50 +14,110 @@ class AlbumDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Album Details')),
+      appBar: AppBar(
+        title: const Text('Album Details'),
+        centerTitle: true,
+        elevation: 0,
+        leading: IconButton(
+          // Add this back button
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/'), // This handles the back navigation
+        ),
+      ),
       body: BlocBuilder<AlbumBloc, AlbumState>(
         builder: (context, state) {
           if (state is AlbumLoading) {
             return const Center(child: CircularProgressIndicator());
-          } else if (state is AlbumDetailsLoaded) {
-            final album = state.album;
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Card(
-                elevation: 4,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: CachedNetworkImage(
-                          imageUrl: album.thumbnailUrl,
-                          placeholder: (context, url) =>
-                          const CircularProgressIndicator(),
-                          errorWidget: (context, url, error) =>
+          } else if (state is AlbumPhotosLoaded) {
+            if (state.photos.isEmpty) {
+              return const Center(child: Text('No photos found'));
+            }
+
+            final firstPhoto = state.photos.first;
+            return CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  expandedHeight: 200,
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: CachedNetworkImage(
+                      imageUrl: firstPhoto.url,
+                      placeholder: (context, url) =>
+                          Container(color: Colors.grey[200]),
+                      errorWidget: (context, url, error) =>
                           const Icon(Icons.error),
-                          width: 200,
-                          height: 200,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.all(16),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      Text(
+                        firstPhoto.title,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text('Album ID: $albumId'),
+                      const Divider(height: 32),
+                      Text(
+                        '${state.photos.length} Photos',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ]),
+                  ),
+                ),
+                SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 1,
+                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final photo = state.photos[index];
+                    return Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: photo.thumbnailUrl,
+                          placeholder: (context, url) =>
+                              Container(color: Colors.grey[200]),
+                          errorWidget: (context, url, error) =>
+                              const Icon(Icons.error),
                           fit: BoxFit.cover,
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      Text('Title: ${album.title}',
-                          style: Theme.of(context).textTheme.titleLarge),
-                      const SizedBox(height: 10),
-                      Text('Album ID: ${album.id}'),
-                      const SizedBox(height: 10),
-                      Text('User ID: ${album.userId}'),
-                    ],
-                  ),
+                    );
+                  }, childCount: state.photos.length),
                 ),
-              ),
+              ],
             );
           } else if (state is AlbumError) {
-            return Center(child: Text(state.message));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(state.message),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => context.read<AlbumBloc>().add(
+                      FetchAlbumPhotos(albumId),
+                    ),
+                    child: const Text('Try Again'),
+                  ),
+                ],
+              ),
+            );
           }
-          return const Center(child: Text('No details found'));
+          return const Center(child: Text('No photos found'));
         },
       ),
     );
